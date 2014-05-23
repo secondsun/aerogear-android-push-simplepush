@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
+import org.apache.http.HttpStatus;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_17;
 import org.java_websocket.handshake.ServerHandshake;
@@ -96,7 +97,7 @@ public class SimplePushWebsocketClient extends WebSocketClient {
                     String pushEndpoint = response.get(PUSH_ENDPOINT).getAsString();
                     Callback<PushChannel> callback = registrationMap.get(channelID);
                     switch (status) {
-                        case 200:
+                        case HttpStatus.SC_OK:
 
                             if (callback == null) {
                                 //do Nothing but do not fail
@@ -105,7 +106,7 @@ public class SimplePushWebsocketClient extends WebSocketClient {
                                 callback.onSuccess(new PushChannel(pushEndpoint, channelID));
                             }
                             break;
-                        case 409:
+                        case HttpStatus.SC_CONFLICT:
                             if (callback == null) {
                                 //do Nothing but do not fail
                             } else {
@@ -114,7 +115,7 @@ public class SimplePushWebsocketClient extends WebSocketClient {
                                 registerChannel(callback);
                             }
                             break;
-                        case 500:
+                        case HttpStatus.SC_INTERNAL_SERVER_ERROR:
                             if (callback == null) {
                                 Log.e(TAG, "The server returned a 500 error for channel:" + channelID);
                             } else {
