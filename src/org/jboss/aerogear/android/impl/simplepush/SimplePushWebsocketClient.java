@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package org.jboss.aerogear.android.impl.simplepush;
 
 import android.util.Log;
@@ -27,10 +22,6 @@ import org.java_websocket.handshake.ServerHandshake;
 import org.jboss.aerogear.android.Callback;
 import org.jboss.aerogear.android.http.HttpException;
 
-/**
- *
- * @author summers
- */
 public class SimplePushWebsocketClient extends WebSocketClient {
 
     private static final String TAG = SimplePushWebsocketClient.class.getSimpleName();
