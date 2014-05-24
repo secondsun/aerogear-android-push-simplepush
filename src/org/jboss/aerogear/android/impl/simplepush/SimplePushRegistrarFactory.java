@@ -10,7 +10,7 @@ public class SimplePushRegistrarFactory extends DefaultPushRegistrarFactory {
     @Override
     public PushRegistrar createPushRegistrar(PushConfig config) {
         if (config.getType().equals(SimplePushTypes.TYPE)) {
-            return new AeroGearSimplePushRegistrar(config);
+            return new AeroGearSimplePushRegistrar((SimplePushConfig)config);
         } else {
             return super.createPushRegistrar(config); 
         }
