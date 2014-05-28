@@ -18,9 +18,10 @@ public class SimplePushService extends Service {
 
     private int serviceId;
 
-    SimplePushWebsocketClient client;
+    private SimplePushWebsocketClient client;
     private static final String TAG = SimplePushService.class.getSimpleName();
-
+    
+    
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         this.serviceId = startId;
