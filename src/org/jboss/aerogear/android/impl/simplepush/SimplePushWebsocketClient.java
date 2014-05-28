@@ -1,6 +1,7 @@
 package org.jboss.aerogear.android.impl.simplepush;
 
 import android.util.Log;
+import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonArray;
@@ -13,7 +14,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import org.apache.http.HttpStatus;
 import org.java_websocket.client.WebSocketClient;
@@ -151,7 +151,7 @@ public class SimplePushWebsocketClient extends WebSocketClient {
      * @return an optional UAID.
      */
     public Optional<String> getUAID() {
-        return Optional.ofNullable(uaid);
+        return Optional.fromNullable(uaid);
     }
 
     /**

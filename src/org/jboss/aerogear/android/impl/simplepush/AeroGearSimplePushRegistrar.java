@@ -129,7 +129,7 @@ public class AeroGearSimplePushRegistrar implements PushRegistrar {
                                             }).create();
                                     try {
                                         config.setDeviceToken(categoryEndpoint.second.getChannelId());
-                                        config.setSimplePushEndpoint(categoryEndpoint.second.getEndpoint());
+                                        config.setSimplePushEndpoint(categoryEndpoint.second.getEndpoint().toString());
                                         config.setCategories(Lists.newArrayList(categoryEndpoint.first));
                                         httpProvider.post(gson.toJson(config));
 
@@ -227,7 +227,7 @@ public class AeroGearSimplePushRegistrar implements PushRegistrar {
                                     }).create();
                             try {
                                 config.setDeviceToken(categoryEndpoint.second.getChannelId());
-                                config.setSimplePushEndpoint(categoryEndpoint.second.getEndpoint());
+                                config.setSimplePushEndpoint(categoryEndpoint.second.getEndpoint().toString());
                                 config.setCategories(Lists.newArrayList(categoryEndpoint.first));
                                 httpProvider.post(gson.toJson(config));
 
@@ -257,7 +257,7 @@ public class AeroGearSimplePushRegistrar implements PushRegistrar {
             }
         });
 
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+//        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override

@@ -149,6 +149,7 @@
             <artifactId>aerogear-android</artifactId>
             <version>1.4.0-SNAPSHOT</version>
             <type>apklib</type>
+            <scope>provided</scope>
         </dependency>
         
         <dependency>
@@ -161,6 +162,7 @@
         <dependency>
             <groupId>android.support</groupId>
             <artifactId>compatibility-v4</artifactId>
+            <scope>provided</scope>
         </dependency>
 
 

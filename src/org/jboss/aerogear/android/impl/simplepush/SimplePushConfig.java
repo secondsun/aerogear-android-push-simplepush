@@ -1,6 +1,5 @@
 package org.jboss.aerogear.android.impl.simplepush;
 
-import java.net.URL;
 import org.jboss.aerogear.android.unifiedpush.PushConfig;
 import org.jboss.aerogear.android.unifiedpush.PushType;
 
@@ -17,8 +16,8 @@ public class SimplePushConfig extends PushConfig {
         return simplePushEndpoint;
     }
 
-    public void setSimplePushEndpoint(URL endpoint) {
-        this.simplePushEndpoint = endpoint.toString();
+    public void setSimplePushEndpoint(String endpoint) {
+        this.simplePushEndpoint = endpoint;
     }
 
 }
