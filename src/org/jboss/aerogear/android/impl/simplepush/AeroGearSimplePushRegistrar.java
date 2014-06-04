@@ -21,6 +21,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.jboss.aerogear.android.Callback;
 import org.jboss.aerogear.android.Provider;
 import org.jboss.aerogear.android.http.HttpException;
@@ -57,16 +61,19 @@ public class AeroGearSimplePushRegistrar implements PushRegistrar {
             public void run() {
                 synchronized (AeroGearSimplePushRegistrar.class) {
                     if (service == null) {
+                        Log.d("test", "Service is null.");
                         context.startService(new Intent(context, SimplePushService.class));
                         context.bindService(new Intent(context, SimplePushService.class), new ServiceConnection() {
 
                             @Override
                             public void onServiceConnected(ComponentName name, IBinder iBinder) {
+                                Log.d("test", "Service connected.");
                                 SimplePushService.SimplePushBinder binder = (SimplePushService.SimplePushBinder) iBinder;
                                 AeroGearSimplePushRegistrar.this.service = binder.getService();
-                                List<Pair<String, PushChannel>> categoryEndpoints = new ArrayList<Pair<String, PushChannel>>();
+                                List<Pair<String, Future<PushChannel>>> categoryEndpoints = new ArrayList<Pair<String, Future<PushChannel>>>();
                                 for (String category : config.getCategories()) {
-                                    PushChannel channel;
+                                    Log.d("test", "Registering cat " + category);
+                                    Future<PushChannel> channel;
                                     try {
                                         channel = service.register(category);
                                     } catch (final Exception ex) {
@@ -80,13 +87,15 @@ public class AeroGearSimplePushRegistrar implements PushRegistrar {
                                         });
                                         return;
                                     }
+                                    Log.d("test", "In process cat " + category);
                                     categoryEndpoints.add(Pair.create(category, channel));
                                 }
 
-                                for (Pair<String, PushChannel> categoryEndpoint : categoryEndpoints) {
+                                for (Pair<String, Future<PushChannel>> categoryEndpoint : categoryEndpoints) {
                                     URL deviceRegistryURL;
                                     try {
                                         deviceRegistryURL = UrlUtils.appendToBaseURL(config.getPushServerURI().toURL(), registryDeviceEndpoint);
+                                        Log.d("test", "URL " + deviceRegistryURL.toString());
                                     } catch (final MalformedURLException ex) {
                                         Log.e(TAG, ex.getMessage(), ex);
                                         new Handler(callerLooper).post(new Runnable() {
@@ -128,12 +137,44 @@ public class AeroGearSimplePushRegistrar implements PushRegistrar {
                                                 }
                                             }).create();
                                     try {
-                                        config.setDeviceToken(categoryEndpoint.second.getChannelId());
-                                        config.setSimplePushEndpoint(categoryEndpoint.second.getEndpoint().toString());
+                                        PushChannel categoryEndpointResult = categoryEndpoint.second.get(12000, TimeUnit.SECONDS);
+                                        Log.d("test", "URL " + deviceRegistryURL.toString());
+                                        config.setDeviceToken(categoryEndpointResult.getChannelId());
+                                        config.setSimplePushEndpoint(categoryEndpointResult.getEndpoint().toString());
                                         config.setCategories(Lists.newArrayList(categoryEndpoint.first));
                                         httpProvider.post(gson.toJson(config));
 
                                     } catch (final HttpException ex) {
+                                        Log.e(TAG, ex.getMessage(), ex);
+                                        new Handler(callerLooper).post(new Runnable() {
+
+                                            @Override
+                                            public void run() {
+                                                callback.onFailure(ex);
+                                            }
+                                        });
+                                        return;
+                                    } catch (final InterruptedException ex) {
+                                        Log.e(TAG, ex.getMessage(), ex);
+                                        new Handler(callerLooper).post(new Runnable() {
+
+                                            @Override
+                                            public void run() {
+                                                callback.onFailure(ex);
+                                            }
+                                        });
+                                        return;
+                                    } catch (final ExecutionException ex) {
+                                        Log.e(TAG, ex.getMessage(), ex);
+                                        new Handler(callerLooper).post(new Runnable() {
+
+                                            @Override
+                                            public void run() {
+                                                callback.onFailure(ex);
+                                            }
+                                        });
+                                        return;
+                                    } catch (final TimeoutException ex) {
                                         Log.e(TAG, ex.getMessage(), ex);
                                         new Handler(callerLooper).post(new Runnable() {
 
@@ -162,9 +203,9 @@ public class AeroGearSimplePushRegistrar implements PushRegistrar {
                             }
                         }, Context.BIND_AUTO_CREATE);
                     } else {
-                        List<Pair<String, PushChannel>> categoryEndpoints = new ArrayList<Pair<String, PushChannel>>();
+                        List<Pair<String, Future<PushChannel>>> categoryEndpoints = new ArrayList<Pair<String, Future<PushChannel>>>();
                         for (String category : config.getCategories()) {
-                            PushChannel channel;
+                            Future<PushChannel> channel;
                             try {
                                 channel = service.register(category);
                             } catch (final Exception ex) {
@@ -181,7 +222,7 @@ public class AeroGearSimplePushRegistrar implements PushRegistrar {
                             categoryEndpoints.add(Pair.create(category, channel));
                         }
 
-                        for (Pair<String, PushChannel> categoryEndpoint : categoryEndpoints) {
+                        for (Pair<String, Future<PushChannel>> categoryEndpoint : categoryEndpoints) {
                             URL deviceRegistryURL;
                             try {
                                 deviceRegistryURL = UrlUtils.appendToBaseURL(config.getPushServerURI().toURL(), registryDeviceEndpoint);
@@ -226,9 +267,10 @@ public class AeroGearSimplePushRegistrar implements PushRegistrar {
                                         }
                                     }).create();
                             try {
-                                config.setDeviceToken(categoryEndpoint.second.getChannelId());
-                                config.setSimplePushEndpoint(categoryEndpoint.second.getEndpoint().toString());
-                                config.setCategories(Lists.newArrayList(categoryEndpoint.first));
+                                PushChannel categoryEndpointResult = categoryEndpoint.second.get(12000, TimeUnit.SECONDS);
+                                        config.setDeviceToken(categoryEndpointResult.getChannelId());
+                                        config.setSimplePushEndpoint(categoryEndpointResult.getEndpoint().toString());
+                                        config.setCategories(Lists.newArrayList(categoryEndpoint.first));
                                 httpProvider.post(gson.toJson(config));
 
                             } catch (final HttpException ex) {
@@ -241,7 +283,37 @@ public class AeroGearSimplePushRegistrar implements PushRegistrar {
                                     }
                                 });
                                 return;
-                            }
+                            } catch (final InterruptedException ex) {
+                                        Log.e(TAG, ex.getMessage(), ex);
+                                        new Handler(callerLooper).post(new Runnable() {
+
+                                            @Override
+                                            public void run() {
+                                                callback.onFailure(ex);
+                                            }
+                                        });
+                                        return;
+                                    } catch (final ExecutionException ex) {
+                                        Log.e(TAG, ex.getMessage(), ex);
+                                        new Handler(callerLooper).post(new Runnable() {
+
+                                            @Override
+                                            public void run() {
+                                                callback.onFailure(ex);
+                                            }
+                                        });
+                                        return;
+                                    } catch (final TimeoutException ex) {
+                                        Log.e(TAG, ex.getMessage(), ex);
+                                        new Handler(callerLooper).post(new Runnable() {
+
+                                            @Override
+                                            public void run() {
+                                                callback.onFailure(ex);
+                                            }
+                                        });
+                                        return;
+                                    }
                         }
 
                         new Handler(callerLooper).post(new Runnable() {

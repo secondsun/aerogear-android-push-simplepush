@@ -10,11 +10,16 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 import java.net.URI;
+import java.nio.channels.NotYetConnectedException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.http.HttpStatus;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_17;
@@ -36,6 +41,19 @@ public class SimplePushWebsocketClient extends WebSocketClient {
     private List<String> channelIDs = ImmutableList.of();
     private Map<String, Callback<PushChannel>> registrationMap = new HashMap<String, Callback<PushChannel>>();
     private long lastMessage = -1;
+    private CountDownLatch connectionLatch;
+
+    public void connect(CountDownLatch connectionLatch) {
+        this.connectionLatch = connectionLatch;
+        new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                connect();
+            }
+        }).start();
+        
+    }
 
     private enum MessageType {
 
@@ -49,6 +67,8 @@ public class SimplePushWebsocketClient extends WebSocketClient {
     @Override
     public void onOpen(ServerHandshake sh) {
         JsonObject message = new JsonObject();
+        Log.d(TAG, "Channel open");
+        connectionLatch.countDown();
         message.addProperty(MESSAGE_TYPE, MessageType.HELLO.name().toLowerCase());
         message.addProperty(UAID, Strings.nullToEmpty(uaid));
         if (!channelIDs.isEmpty()) {
@@ -78,6 +98,7 @@ public class SimplePushWebsocketClient extends WebSocketClient {
             switch (messageType) {
                 case HELLO:
                     uaid = response.get(UAID).getAsString();
+                    connectionLatch.countDown();
                     break;
                 case REGISTER:
                     int status = response.get(STATUS).getAsInt();
@@ -140,7 +161,7 @@ public class SimplePushWebsocketClient extends WebSocketClient {
 
     @Override
     public void onError(Exception excptn) {
-        System.err.println(excptn.getMessage() + '\n' + excptn.toString());
+        Log.e(TAG, excptn.getMessage(), excptn);
         throw new UnsupportedOperationException("Not supported yet."); 
     }
 
@@ -222,6 +243,25 @@ public class SimplePushWebsocketClient extends WebSocketClient {
         send(message.toString());
     }
 
+    @Override
+    public void send(final String text) throws NotYetConnectedException {
+        new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    connectionLatch.await(9000, TimeUnit.SECONDS); 
+                    SimplePushWebsocketClient.super.send(text);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(SimplePushWebsocketClient.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }).start();
+        
+    }
+
+    
+    
     public void ping() {
         send("{}");
     }
